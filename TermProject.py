@@ -66,6 +66,24 @@ def generateModel():
         print "\t\tTLINK Relations Count: " + str(len(tlinkRelations))
         print "\t\tALINK Relations Count: " + str(len(alinkRelations))
 
+        print "--------------------------"
+        print "TLINK Relations"
+        for annotation in tlinkRelations:
+            if type(annotation) is ThymeMLRelation: 
+                print annotation.spansContent
+
+        print "--------------------------"
+        print "ALINK Relations"
+        for annotation in alinkRelations:
+            if type(annotation) is ThymeMLRelation: 
+                print annotation.spansContent
+
+        print "--------------------------"
+        print "Identical Relations"
+        for annotation in identicalRelations:
+            if type(annotation) is ThymeMLRelation: 
+                print annotation.spansContent
+
         thymeDocumentData.append(data)
 
         if len(thymeDocumentData) > 0: # For now just process the first document
