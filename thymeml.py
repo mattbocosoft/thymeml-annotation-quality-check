@@ -68,19 +68,19 @@ class _XMLWrapper(object):
 
 
 class ThymeMLData(_XMLWrapper):
-    def __init__(self, xml=None):
+    def __init__(self, xml=None, document=None):
         """
         :param xml.etree.ElementTree.Element xml: the <data> element
         """
         if xml is None:
             xml = ElementTree.Element("data")
         _XMLWrapper.__init__(self, xml)
-        self.annotations = ThymeMLAnnotations(self.xml.find("annotations"), self)
+        self.annotations = ThymeMLAnnotations(self.xml.find("annotations"), self, document)
 
     @classmethod
-    def from_file(cls, xml_path):
+    def from_file(cls, xml_path, document):
         try:
-            return cls(ElementTree.parse(xml_path).getroot())
+            return cls(ElementTree.parse(xml_path).getroot(), document)
         except ElementTree.ParseError as e:
             raise ValueError("invalid XML file {0}: {1}".format(xml_path, e))
 
@@ -107,16 +107,16 @@ class ThymeMLData(_XMLWrapper):
 
 
 class ThymeMLAnnotations(_XMLWrapper):
-    def __init__(self, xml, _data):
+    def __init__(self, xml, _data, document):
         _XMLWrapper.__init__(self, xml)
         self._data = _data
         self._id_to_annotation = collections.OrderedDict()
         if self.xml is not None:
             for annotation_elem in self.xml:
                 if annotation_elem.tag == "entity":
-                    annotation = ThymeMLEntity(annotation_elem, self)
+                    annotation = ThymeMLEntity(annotation_elem, self, document)
                 elif annotation_elem.tag == "relation":
-                    annotation = ThymeMLRelation(annotation_elem, self)
+                    annotation = ThymeMLRelation(annotation_elem, self, document)
                 else:
                     raise ValueError("invalid tag: {0}".format(annotation_elem.tag))
                 if annotation.id in self._id_to_annotation:
@@ -165,13 +165,14 @@ class ThymeMLAnnotations(_XMLWrapper):
 
 @functools.total_ordering
 class ThymeMLAnnotation(_XMLWrapper):
-    def __init__(self, xml, _annotations):
+    def __init__(self, xml, _annotations, document):
         """
         :param xml.etree.ElementTree.Element xml: xml definition of this annotation
         :param ThymeMLAnnotations _annotations: the annotations collection containing this annotation
         """
         _XMLWrapper.__init__(self, xml)
         self._annotations = _annotations
+        self.document = document
         self.properties = ThymeMLProperties(self.xml.find("properties"), self)
 
     def __eq__(self, other):
@@ -325,10 +326,10 @@ class ThymeMLProperties(_XMLWrapper):
 
 
 class ThymeMLEntity(ThymeMLAnnotation):
-    def __init__(self, xml=None, _annotations=None):
+    def __init__(self, xml=None, _annotations=None, document=None):
         if xml is None:
             xml = ElementTree.Element("entity")
-        ThymeMLAnnotation.__init__(self, xml, _annotations)
+        ThymeMLAnnotation.__init__(self, xml, _annotations, document)
 
     @property
     def spans(self):
@@ -347,12 +348,19 @@ class ThymeMLEntity(ThymeMLAnnotation):
             span_elem = ElementTree.SubElement(self.xml, "span")
         span_elem.text = ";".join("{0:d},{1:d}".format(*span) for span in spans)
 
+    @property
+    def spansContent(self):
+        contentSpans = []
+        for span in self.spans:
+            if len(span) == 2:
+                contentSpans.append(self.document[span[0]:span[1]])
+        return contentSpans
 
 class ThymeMLRelation(ThymeMLAnnotation):
-    def __init__(self, xml=None, _annotations=None):
+    def __init__(self, xml=None, _annotations=None, document=None):
         if xml is None:
             xml = ElementTree.Element("relation")
-        ThymeMLAnnotation.__init__(self, xml, _annotations)
+        ThymeMLAnnotation.__init__(self, xml, _annotations, document)
 
     @property
     def spans(self):

@@ -1,4 +1,4 @@
-import thymeml # THYME-ML object model 
+from thymeml import * # THYME-ML object model
 from os import listdir # Directory
 from os.path import isfile, join # Directory
 import codecs # Reading file with utf-8 encoding
@@ -30,19 +30,32 @@ def generateModel():
     print "Document Root Directory: " + documentDirectory
 
     print "Generating THYME data model for each document and XML pair"
+    thymeDocumentData = []
     for folder in clinicFolders:
         # e.g. ID001_clinic_001
-        print "\tDocument: " + folder
 
-        documentName = documentDirectory + folder + "/" + folder
-        documentContents = contentsOfFile(documentName) # document name is same as folder
+        documentPath = documentDirectory + folder + "/" + folder
+        print "\tDocument: " + documentPath
+
+        documentContents = contentsOfFile(documentPath) # document name is same as folder
 
         print "\t\tNumber of Lines: " + str(documentContents.count('\n'))
         print "\t\tNumber of Characters: " + str(len(documentContents))
 
-        thymeData = ThymeMLData.fromFile(folder + ".Thyme2v1-withindoc.ogormant.inprogress.xml") #, documentContents);
+        xmlPath = xmlDirectory + folder + "/" + folder + ".Thyme2v1-withindoc.ogormant.inprogress.xml"
         
-        print thymeData.annotations
+        print "\tXML: " + xmlPath
+
+        data = ThymeMLData.from_file(xmlPath, documentContents)
+        
+        for annotation in data.annotations:
+            if type(annotation) is ThymeMLEntity:
+                print annotation.spansContent
+        
+        thymeDocumentData.append(data)
+
+        if len(thymeDocumentData) > 0: # For now just process the first document
+            return
 
 
 generateModel()
@@ -55,7 +68,7 @@ def mergeCoreference():
 
 	Use relations with "Identical" type to merge id's
 
-	Ignore documents with "_path_" in the name
+	[DONE] Ignore documents with "_path_" in the name
 
 	TLINK is the actual temporal relations
 	ALINK - temporal relation for X that start or end Y
@@ -68,7 +81,7 @@ def propagateRelations() {
 	Instantiate indirect relations... If A < B and B < C then A < C
 
     findRelationConflicts()
-	a) Look to see if C > A already exists.
+	a) Look to see if C > A already exists. AKA Look to see if there are conflicts in the implicit event relations
 }
 
 def findRelationConflicts() {
