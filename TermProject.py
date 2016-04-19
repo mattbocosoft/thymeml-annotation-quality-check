@@ -29,6 +29,7 @@ def generateModel():
 
     print "Document Root Directory: " + documentDirectory
 
+    print "--------------------------"
     print "Generating THYME data model for each document and XML pair"
     thymeDocumentData = []
     for folder in clinicFolders:
@@ -46,12 +47,25 @@ def generateModel():
         
         print "\tXML: " + xmlPath
 
+        print "--------------------------"
+        print "\tReading data..."
         data = ThymeMLData.from_file(xmlPath, documentContents)
+
+        entities = [a for a in data.annotations if type(a) is ThymeMLEntity]
+        events = [a for a in entities if a.type == "EVENT"]
         
-        for annotation in data.annotations:
-            if type(annotation) is ThymeMLEntity:
-                print annotation.spansContent
-        
+        relations = [a for a in data.annotations if type(a) is ThymeMLRelation]
+        identicalRelations = [r for r in data.annotations if r.type == "Identical"]
+        tlinkRelations = [r for r in data.annotations if r.type == "TLINK"]
+        alinkRelations = [r for r in data.annotations if r.type == "ALINK"]
+
+        print "\tEntity Count: " + str(len(entities))
+        print "\t\tEvent Count: " + str(len(events))
+        print "\tRelation Count: " + str(len(relations))
+        print "\t\tIdentical Relations Count: " + str(len(identicalRelations))
+        print "\t\tTLINK Relations Count: " + str(len(tlinkRelations))
+        print "\t\tALINK Relations Count: " + str(len(alinkRelations))
+
         thymeDocumentData.append(data)
 
         if len(thymeDocumentData) > 0: # For now just process the first document
