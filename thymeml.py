@@ -233,6 +233,10 @@ class ThymeMLAnnotation(_XMLWrapper):
     def spans(self):
         raise NotImplementedError
 
+    @property
+    def spansContent(self):
+        raise NotImplementedError
+
     def is_self_referential(self, seen_ids=None):
         if seen_ids is None:
             seen_ids = {}
@@ -339,6 +343,14 @@ class ThymeMLEntity(ThymeMLAnnotation):
         return tuple(tuple(int(offset) for offset in tuple(span_text.split(",")))
                      for span_text in spans_text.split(";"))
 
+    @property
+    def spansContent(self):
+        contentSpans = []
+        for span in self.spans:
+            if len(span) == 2:
+                contentSpans.append(self.document[span[0]:span[1]])
+        return contentSpans
+
     @spans.setter
     def spans(self, spans):
         if not isinstance(spans, tuple) or not all(isinstance(span, tuple) and len(span) == 2 for span in spans):
@@ -347,14 +359,6 @@ class ThymeMLEntity(ThymeMLAnnotation):
         if span_elem is None:
             span_elem = ElementTree.SubElement(self.xml, "span")
         span_elem.text = ";".join("{0:d},{1:d}".format(*span) for span in spans)
-
-    @property
-    def spansContent(self):
-        contentSpans = []
-        for span in self.spans:
-            if len(span) == 2:
-                contentSpans.append(self.document[span[0]:span[1]])
-        return contentSpans
 
 class ThymeMLRelation(ThymeMLAnnotation):
     def __init__(self, xml=None, _annotations=None, document=None):
@@ -368,3 +372,12 @@ class ThymeMLRelation(ThymeMLAnnotation):
             self.properties[name].spans
             for name in sorted(self.properties)
             if isinstance(self.properties[name], ThymeMLAnnotation))
+
+    @property
+    def spansContent(self):
+        contentSpans = []
+        for spanGroup in self.spans:
+            for span in spanGroup:
+                if len(span) == 2:
+                    contentSpans.append(self.document[span[0]:span[1]])
+        return contentSpans
