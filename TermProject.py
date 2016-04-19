@@ -9,7 +9,7 @@ def contentsOfFile(filename):
     return content
 
 # Convert XML to Python objects (either specialized classes or dictionary)
-def generateModel():
+def main():
 
     documentDirectory = "./Tim-Round1/THYME-Analysis/"
     xmlDirectory = "./Tim-Round2/thyme2mergedfiles/";
@@ -32,18 +32,20 @@ def generateModel():
     print "--------------------------"
     print "Generating THYME data model for each document and XML pair"
     thymeDocumentData = []
-    for folder in clinicFolders:
+    for folder in clinicFolders: # Tim confirmed that currently we are not doing cross-document annotation
+    
         # e.g. ID001_clinic_001
 
-        documentPath = documentDirectory + folder + "/" + folder
+        documentName = folder # document name is same as folder
+        documentPath = documentDirectory + folder + "/" + documentName
         print "\tDocument: " + documentPath
 
-        documentContents = contentsOfFile(documentPath) # document name is same as folder
+        documentContents = contentsOfFile(documentPath)
 
         print "\t\tNumber of Lines: " + str(documentContents.count('\n'))
         print "\t\tNumber of Characters: " + str(len(documentContents))
 
-        xmlPath = xmlDirectory + folder + "/" + folder + ".Thyme2v1-withindoc.ogormant.inprogress.xml"
+        xmlPath = xmlDirectory + folder + "/" + documentName + ".Thyme2v1-withindoc.ogormant.inprogress.xml"
         
         print "\tXML: " + xmlPath
 
@@ -89,8 +91,7 @@ def generateModel():
         if len(thymeDocumentData) > 0: # For now just process the first document
             return
 
-
-generateModel()
+main()
 
 '''
 def mergeCoreference():
