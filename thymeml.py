@@ -261,7 +261,25 @@ class ThymeMLProperties(_XMLWrapper):
         self._tag_to_property_xml = {}
         if self.xml is not None:
             for property_elem in self.xml:
-                self._tag_to_property_xml[property_elem.tag] = property_elem
+
+                keyExists = property_elem.tag in self._tag_to_property_xml
+
+                useList = False                
+                if (property_elem.tag == "Coreferring_String" or # We know these keys should map to a list
+                    property_elem.tag == "Part" or
+                    property_elem.tag == "Subset"):
+                    useList = True
+                elif keyExists: # Key/Value already exists
+                    print "PROPERTY (" + property_elem.tag + ") ALREADY EXISTS"
+                    useList = True
+
+                if useList:
+                    if keyExists:
+                        self._tag_to_property_xml[property_elem.tag].append(property_elem)
+                    else:
+                        self._tag_to_property_xml[property_elem.tag] = [property_elem]
+                else: # Set value # Key/Value does not exist
+                    self._tag_to_property_xml[property_elem.tag] = property_elem
 
     def __eq__(self, other):
         if not isinstance(other, ThymeMLProperties):
@@ -295,10 +313,17 @@ class ThymeMLProperties(_XMLWrapper):
         return property_name in self._tag_to_property_xml
 
     def __getitem__(self, property_name):
-        value = self._tag_to_property_xml[property_name].text
-        return self._annotation._annotations._id_to_annotation.get(value, value)
+        value = self._tag_to_property_xml[property_name]
+        if type(value) is list:
+            valueList = []
+            for item in value:
+                valueList.append(self._annotation._annotations._id_to_annotation.get(item.text, item.text))
+            return valueList
+        else:
+            valueText = self._tag_to_property_xml[property_name].text
+            return self._annotation._annotations._id_to_annotation.get(valueText, valueText)
 
-    def __setitem__(self, name, value):
+    def __setitem__(self, name, value):        
         if isinstance(value, ThymeMLAnnotation):
             if self._annotation is None or self._annotation._annotations is None:
                 message = 'annotation must be in <annotations> before assigning annotation value to property "{0}":\n{1}'
