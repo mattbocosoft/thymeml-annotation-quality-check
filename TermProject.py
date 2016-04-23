@@ -86,6 +86,84 @@ def main():
             if type(annotation) is ThymeMLRelation: 
                 print annotation.spansContent
 
+
+        # Replace source/target entities in relationships with the coreference chain relation they belong to (if any)
+        replaced = 0
+        total = 0
+
+        for tlinkRelation in tlinkRelations:
+
+            for identityRelation in identicalRelations:
+            
+                # print identityRelation.properties["Coreferring_String"]
+   
+                # Source
+                matchedSourceIdentity = False
+                if tlinkRelation.properties["Source"] == identityRelation.properties["FirstInstance"]:
+                    matchedSourceIdentity = True
+                elif type(identityRelation.properties["Coreferring_String"]) is not list:
+                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
+                elif tlinkRelation.properties["Source"] in identityRelation.properties["Coreferring_String"]:
+                        matchedSourceIdentity = True
+                if matchedSourceIdentity:
+                    # print "Found TLINK relation with Source belonging to a coreference chain relation"
+                    tlinkRelation.properties["Source"] = identityRelation
+                    replaced+= 1
+                total+= 1
+
+                # Target
+                matchedSourceIdentity = False
+                if tlinkRelation.properties["Target"] == identityRelation.properties["FirstInstance"]:
+                    matchedSourceIdentity = True
+                elif type(identityRelation.properties["Coreferring_String"]) is not list:
+                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
+                elif tlinkRelation.properties["Target"] in identityRelation.properties["Coreferring_String"]:
+                        matchedSourceIdentity = True
+                if matchedSourceIdentity:
+                    # print "Found TLINK relation with Target belonging to a coreference chain relation"
+                    tlinkRelation.properties["Target"] = identityRelation
+                    replaced+= 1
+                total+= 1
+
+        print "TLINK Replaced " + str(replaced) + "/" + str(total)
+
+        replaced = 0
+        total = 0
+        for alinkRelation in alinkRelations:
+            
+            for identityRelation in identicalRelations:
+
+                # Source
+                matchedSourceIdentity = False
+                if alinkRelation.properties["Source"] == identityRelation.properties["FirstInstance"]:
+                    matchedSourceIdentity = True
+                elif type(identityRelation.properties["Coreferring_String"]) is not list:
+                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
+                    #print identityRelation.properties["Coreferring_String"]
+                elif alinkRelation.properties["Source"] in identityRelation.properties["Coreferring_String"]:
+                        matchedSourceIdentity = True
+                if matchedSourceIdentity:
+                    # print "Found ALINK relation with Source belonging to a coreference chain relation"
+                    alinkRelation.properties["Source"] = identityRelation
+                    replaced+= 1
+                total+= 1
+
+                # Target
+                matchedSourceIdentity = False
+                if alinkRelation.properties["Target"] == identityRelation.properties["FirstInstance"]:
+                    matchedSourceIdentity = True
+                elif type(identityRelation.properties["Coreferring_String"]) is not list:
+                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
+                    #print identityRelation.properties["Coreferring_String"]
+                elif alinkRelation.properties["Target"] in identityRelation.properties["Coreferring_String"]:
+                        matchedSourceIdentity = True
+                if matchedSourceIdentity:
+                    # print "Found ALINK relation with Target belonging to a coreference chain relation"
+                    alinkRelation.properties["Target"] = identityRelation
+                    replaced+= 1
+                total+= 1
+        print "ALINK Replaced " + str(replaced) + "/" + str(total)
+
         thymeDocumentData.append(data)
 
         if len(thymeDocumentData) > 0: # For now just process the first document
