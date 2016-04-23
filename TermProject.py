@@ -117,6 +117,18 @@ def propagateRelations() {
 	a) Look to see if C > A already exists. AKA Look to see if there are conflicts in the implicit event relations
 }
 
+# Create timeline...
+
+# A test/study is always an event. The pathology repots might say something like, "MRI showed tumor". Things like tumor ("discovering the tumor") are considered implicit events.
+# The annotators explicitly marked a tlink relation CONTAINS between MRI and "discovery of tumor". One fix for this would be to create/use a "CONTAINS.DISCOVERYOF" relation for these instances.
+# Look for annotations that in are part/whole relations, and then look to see if those are also in tlinks.
+# Kinds of part/whole relation
+    # entity - entity
+    # event - event
+    # Everytime we see a part/whole relation, change the relationship type from "<type>Whole/Part</type>" to "<type>Event/Subevent</type>"
+    # Then... look for instances of entity - event that are in a part/whole relation. In the corefernece relation, that
+    # How did Tim do his merge?  
+
 def findRelationConflicts() {
     
     var conflictingRelationPairs = []
