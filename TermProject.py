@@ -94,7 +94,22 @@ def processDocumentThymeMLData(data):
             print "\tCoreference chain with multiple types:"
             for reference in relation.allReferences:
                 print "\t\t" + reference.type + ": " + str(reference.spansContent)
-        
+
+    printSectionDivider(0)
+    print "Confirm that all Identical Relations (" + str(len(identicalRelations)) + ") are mutually independent (do not share annotations)"
+    independentIdenticalRelations = 0
+    for relation in identicalRelations:
+        for reference in relation.allReferences:
+            for relation2 in identicalRelations:
+                if relation is relation2:
+                    continue
+                if reference in relation2.allReferences:
+                    independentIdenticalRelations += 1
+    if independentIdenticalRelations > 0:
+        print "\tERROR: Found (" + str(independentIdenticalRelations) + ")Identical relations with references in common!"
+    else:
+        print "\t All identical relations are independent."
+
 
     printSectionDivider(0)
     print "Replacing TLINK/ALINK relationship source/target entities with the coreference chain relation they belong to (if any)"
