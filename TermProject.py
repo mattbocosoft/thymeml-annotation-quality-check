@@ -7,6 +7,127 @@ def contentsOfFile(filename):
     file = codecs.open(filename, "r", "utf-8")
     content = file.read()
     return content
+    
+def printSectionDivider(depth):
+    if depth == 0:
+        print "________________________________________"
+    elif depth == 1:
+        print "\t----------------------" 
+    elif depth == 2:
+        print "\t\t------------------" 
+
+def processDocumentThymeMLData(data):
+
+    print "\tProcessing Data..."
+    printSectionDivider(0)
+
+    # Events
+    entities = [a for a in data.annotations if type(a) is ThymeMLEntity]
+    if len([a for a in entities if a.type == "DOCTIME"]) < 1:
+        print "ERROR: Found LESS than 1 DOCTIME entity annotation"
+    elif len([a for a in entities if a.type == "DOCTIME"]) > 1:
+        print "ERROR: Found MORE than 1 DOCTIME entity annotation"
+    docTime = [a for a in entities if a.type == "DOCTIME"][0] # There should be exactly one match
+    events = [a for a in entities if a.type == "EVENT"]
+    timex3s = [a for a in entities if a.type == "TIMEX3"]
+    markables = [a for a in entities if a.type == "Markable"]
+
+    print "\tENTITY ANNOTATIONS (Total: " + str(len(entities)) + ")"
+    printSectionDivider(2)
+    print "\t\tMarkables (" + str(len(markables)) + ")"
+    for annotation in markables:
+        print "" #annotation.spansContent
+    printSectionDivider(2)
+    print "\t\tDocTime (" + str(docTime.spansContent) 
+    printSectionDivider(2)
+    print "\t\tEvents (" + str(len(events)) + ")"
+    for annotation in events:
+        print "" #annotation.spansContent
+    printSectionDivider(2)
+    print "\t\tTIMEX3s (" + str(len(timex3s)) + ")"
+    for annotation in timex3s:
+        print "" #annotation.spansContent
+    printSectionDivider(2)
+
+    # Relations
+    relations = [a for a in data.annotations if type(a) is ThymeMLRelation]
+    identicalRelations = [r for r in data.annotations if r.type == "Identical"]
+    
+    # TLINKs connect two EVENTs, or an EVENT and a TIMEX3 together, specifying the temporal relationship between them (before, overlap, contains, begins-on and ends-on)
+    tlinkRelations = [r for r in data.annotations if r.type == "TLINK"]
+    alinkRelations = [r for r in data.annotations if r.type == "ALINK"]
+    print "\tRELATION ANNOTATIONS (Total: " + str(len(relations)) + ")"
+    printSectionDivider(2)
+    print "\t\tTLINK Relations (" + str(len(tlinkRelations)) + ")"
+    for annotation in tlinkRelations:
+        if type(annotation) is ThymeMLRelation: 
+            print "" #annotation.spansContent
+
+    printSectionDivider(2)
+    print "\t\tALINK Relations (" + str(len(alinkRelations)) + ")"
+    for annotation in alinkRelations:
+        if type(annotation) is ThymeMLRelation: 
+            print "" #annotation.spansContent
+
+    printSectionDivider(2)
+    print "\t\tIdentical Relations (" + str(len(identicalRelations)) + ")"
+    for annotation in identicalRelations:
+        if type(annotation) is ThymeMLRelation: 
+            print "" #annotation.spansContent
+
+    printSectionDivider(0)
+    print "Checking coreference chains (Identical) for multiple types..."
+    
+    for relation in identicalRelations:
+        hasMarkable = False
+        hasEvent = False
+        hasTimex3 = False
+        for reference in relation.allReferences:
+            if reference.type == "Markable":
+                hasMarkable = True
+            elif reference.type == "EVENT":
+                hasEvent = True
+            elif reference.type == "TIMEX3":
+                hasTimex3 = True
+        if (hasMarkable + hasEvent + hasTimex3) > 1:
+            printSectionDivider(1)
+            print "\tCoreference chain with multiple types:"
+            for reference in relation.allReferences:
+                print "\t\t" + reference.type + ": " + str(reference.spansContent)
+        
+
+    printSectionDivider(0)
+    print "Replacing TLINK/ALINK relationship source/target entities with the coreference chain relation they belong to (if any)"
+    
+    print "TLINK Relations"
+    mergeCoreferentEventsInTemporalRelations(tlinkRelations, identicalRelations)
+    print "ALINK Relations"
+    mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
+
+def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChains):
+
+    replaced = 0
+    total = 0
+
+    for temporalRelation in temporalRelations:
+
+        for coreferenceChain in coreferenceChains:
+
+            references = coreferenceChain.allReferences
+
+            # Source
+            if temporalRelation.properties["Source"] in references:
+                # print "Found TLINK relation with Source belonging to a coreference chain relation"
+                temporalRelation.properties["Source"] = coreferenceChain
+                replaced += 1
+
+            # Target
+            if temporalRelation.properties["Target"] in references:
+                # print "Found TLINK relation with Target belonging to a coreference chain relation"
+                temporalRelation.properties["Target"] = coreferenceChain
+                replaced += 1
+
+    print "\tTemporal Relation Components Replaced with Coreference Chains " + str(replaced) + "/" + str(len(temporalRelations)*2)
 
 # Convert XML to Python objects (either specialized classes or dictionary)
 def main():
@@ -29,10 +150,9 @@ def main():
 
     print "Document Root Directory: " + documentDirectory
 
-    print "--------------------------"
+    printSectionDivider(0)
     print "Generating THYME data model for each document and XML pair"
-    thymeDocumentData = []
-    for folder in clinicFolders: # Tim confirmed that currently we are not doing cross-document annotation
+    for i, folder in enumerate(clinicFolders): # Tim confirmed that currently we are not doing cross-document annotation
     
         # e.g. ID001_clinic_001
 
@@ -49,125 +169,13 @@ def main():
         
         print "\tXML: " + xmlPath
 
-        print "--------------------------"
-        print "\tReading data..."
+        printSectionDivider(0)
+        print "\tReading Files..."
+        printSectionDivider(0)
         data = ThymeMLData.from_file(xmlPath, documentContents)
-
-        entities = [a for a in data.annotations if type(a) is ThymeMLEntity]
-        events = [a for a in entities if a.type == "EVENT"]
+        processDocumentThymeMLData(data)
         
-        relations = [a for a in data.annotations if type(a) is ThymeMLRelation]
-        identicalRelations = [r for r in data.annotations if r.type == "Identical"]
-        tlinkRelations = [r for r in data.annotations if r.type == "TLINK"]
-        alinkRelations = [r for r in data.annotations if r.type == "ALINK"]
-
-        print "\tEntity Count: " + str(len(entities))
-        print "\t\tEvent Count: " + str(len(events))
-        print "\tRelation Count: " + str(len(relations))
-        print "\t\tIdentical Relations Count: " + str(len(identicalRelations))
-        print "\t\tTLINK Relations Count: " + str(len(tlinkRelations))
-        print "\t\tALINK Relations Count: " + str(len(alinkRelations))
-
-        print "--------------------------"
-        print "TLINK Relations"
-        for annotation in tlinkRelations:
-            if type(annotation) is ThymeMLRelation: 
-                print annotation.spansContent
-
-        print "--------------------------"
-        print "ALINK Relations"
-        for annotation in alinkRelations:
-            if type(annotation) is ThymeMLRelation: 
-                print annotation.spansContent
-
-        print "--------------------------"
-        print "Identical Relations"
-        for annotation in identicalRelations:
-            if type(annotation) is ThymeMLRelation: 
-                print annotation.spansContent
-
-
-        # Replace source/target entities in relationships with the coreference chain relation they belong to (if any)
-        replaced = 0
-        total = 0
-
-        for tlinkRelation in tlinkRelations:
-
-            for identityRelation in identicalRelations:
-            
-                # print identityRelation.properties["Coreferring_String"]
-   
-                # Source
-                matchedSourceIdentity = False
-                if tlinkRelation.properties["Source"] == identityRelation.properties["FirstInstance"]:
-                    matchedSourceIdentity = True
-                elif type(identityRelation.properties["Coreferring_String"]) is not list:
-                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
-                elif tlinkRelation.properties["Source"] in identityRelation.properties["Coreferring_String"]:
-                        matchedSourceIdentity = True
-                if matchedSourceIdentity:
-                    # print "Found TLINK relation with Source belonging to a coreference chain relation"
-                    tlinkRelation.properties["Source"] = identityRelation
-                    replaced+= 1
-                total+= 1
-
-                # Target
-                matchedSourceIdentity = False
-                if tlinkRelation.properties["Target"] == identityRelation.properties["FirstInstance"]:
-                    matchedSourceIdentity = True
-                elif type(identityRelation.properties["Coreferring_String"]) is not list:
-                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
-                elif tlinkRelation.properties["Target"] in identityRelation.properties["Coreferring_String"]:
-                        matchedSourceIdentity = True
-                if matchedSourceIdentity:
-                    # print "Found TLINK relation with Target belonging to a coreference chain relation"
-                    tlinkRelation.properties["Target"] = identityRelation
-                    replaced+= 1
-                total+= 1
-
-        print "TLINK Replaced " + str(replaced) + "/" + str(total)
-
-        replaced = 0
-        total = 0
-        for alinkRelation in alinkRelations:
-            
-            for identityRelation in identicalRelations:
-
-                # Source
-                matchedSourceIdentity = False
-                if alinkRelation.properties["Source"] == identityRelation.properties["FirstInstance"]:
-                    matchedSourceIdentity = True
-                elif type(identityRelation.properties["Coreferring_String"]) is not list:
-                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
-                    #print identityRelation.properties["Coreferring_String"]
-                elif alinkRelation.properties["Source"] in identityRelation.properties["Coreferring_String"]:
-                        matchedSourceIdentity = True
-                if matchedSourceIdentity:
-                    # print "Found ALINK relation with Source belonging to a coreference chain relation"
-                    alinkRelation.properties["Source"] = identityRelation
-                    replaced+= 1
-                total+= 1
-
-                # Target
-                matchedSourceIdentity = False
-                if alinkRelation.properties["Target"] == identityRelation.properties["FirstInstance"]:
-                    matchedSourceIdentity = True
-                elif type(identityRelation.properties["Coreferring_String"]) is not list:
-                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type(identityRelation.properties["Coreferring_String"]))
-                    #print identityRelation.properties["Coreferring_String"]
-                elif alinkRelation.properties["Target"] in identityRelation.properties["Coreferring_String"]:
-                        matchedSourceIdentity = True
-                if matchedSourceIdentity:
-                    # print "Found ALINK relation with Target belonging to a coreference chain relation"
-                    alinkRelation.properties["Target"] = identityRelation
-                    replaced+= 1
-                total+= 1
-        print "ALINK Replaced " + str(replaced) + "/" + str(total)
-
-        thymeDocumentData.append(data)
-
-        if len(thymeDocumentData) > 0: # For now just process the first document
-            return
+        break; # For now just process the first document
 
 main()
 
