@@ -406,3 +406,22 @@ class ThymeMLRelation(ThymeMLAnnotation):
                 if len(span) == 2:
                     contentSpans.append(self.document[span[0]:span[1]])
         return contentSpans
+    
+    @property
+    def allReferences(self):
+        if self.parents_type == "CorefChains":
+            if self.type == "Identical":
+                references = [self.properties["FirstInstance"]]
+                if type(self.properties["Coreferring_String"]) is not list:
+                    print "ERROR: Coreferring_String is not LIST. Type is " + str(type())
+                references.extend(self.properties["Coreferring_String"])
+            elif self.type == "Whole/Part":
+                references = [self.properties["Whole"]]
+                if type(self.properties["Part"]) is not list:
+                    print "ERROR: Part is not LIST. Type is " + str(type())
+                references.extend(self.properties["Part"])
+        elif self.parents_type == "TemporalRelations":
+            if self.type == "TLINK" or self.type == "ALINK":
+                references = [self.properties["Source"], self.properties["Target"]]
+        return references
+        
