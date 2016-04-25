@@ -119,8 +119,9 @@ class ThymeMLAnnotations(_XMLWrapper):
                     annotation = ThymeMLRelation(annotation_elem, self, document)
                 else:
                     raise ValueError("invalid tag: {0}".format(annotation_elem.tag))
-                if annotation.id in self._id_to_annotation:
-                    raise ValueError("duplicate id: {0}".format(annotation.id))
+                while annotation.id in self._id_to_annotation:
+                    # raise ValueError("duplicate id: {0}".format(annotation.id))
+                    annotation.id += "d"
                 self._id_to_annotation[annotation.id] = annotation
 
     def __iter__(self):
