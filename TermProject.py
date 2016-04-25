@@ -9,17 +9,21 @@ def contentsOfFile(filename):
     return content
     
 def printSectionDivider(depth):
+
     if depth == 0:
-        print "________________________________________"
+        print "########################################"
+        print "########################################"
     elif depth == 1:
-        print "\t----------------------" 
+        print "________________________________________"
     elif depth == 2:
+        print "\t----------------------" 
+    elif depth == 3:
         print "\t\t------------------" 
 
 def processDocumentThymeMLData(data, documentName, documentContents):
 
     print "\tProcessing Data..."
-    printSectionDivider(0)
+    printSectionDivider(1)
 
     # Events
     entities = [a for a in data.annotations if type(a) is ThymeMLEntity]
@@ -33,21 +37,21 @@ def processDocumentThymeMLData(data, documentName, documentContents):
     markables = [a for a in entities if a.type == "Markable"]
 
     print "\tENTITY ANNOTATIONS (Total: " + str(len(entities)) + ")"
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tMarkables (" + str(len(markables)) + ")"
     for annotation in markables:
         print "" #annotation.spansContent
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tDocTime (" + str(docTime.spansContent) 
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tEvents (" + str(len(events)) + ")"
     for annotation in events:
         print "" #annotation.spansContent
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tTIMEX3s (" + str(len(timex3s)) + ")"
     for annotation in timex3s:
         print "" #annotation.spansContent
-    printSectionDivider(2)
+    printSectionDivider(3)
 
     # Relations
     relations = [a for a in data.annotations if type(a) is ThymeMLRelation]
@@ -57,25 +61,25 @@ def processDocumentThymeMLData(data, documentName, documentContents):
     tlinkRelations = [r for r in data.annotations if r.type == "TLINK"]
     alinkRelations = [r for r in data.annotations if r.type == "ALINK"]
     print "\tRELATION ANNOTATIONS (Total: " + str(len(relations)) + ")"
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tTLINK Relations (" + str(len(tlinkRelations)) + ")"
     for annotation in tlinkRelations:
         if type(annotation) is ThymeMLRelation: 
             print "" #annotation.spansContent
 
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tALINK Relations (" + str(len(alinkRelations)) + ")"
     for annotation in alinkRelations:
         if type(annotation) is ThymeMLRelation: 
             print "" #annotation.spansContent
 
-    printSectionDivider(2)
+    printSectionDivider(3)
     print "\t\tIdentical Relations (" + str(len(identicalRelations)) + ")"
     for annotation in identicalRelations:
         if type(annotation) is ThymeMLRelation: 
             print "" #annotation.spansContent
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Checking coreference chains (Identical) for multiple types..."
     
     for relation in identicalRelations:
@@ -90,12 +94,12 @@ def processDocumentThymeMLData(data, documentName, documentContents):
             elif reference.type == "TIMEX3":
                 hasTimex3 = True
         if (hasMarkable + hasEvent + hasTimex3) > 1:
-            printSectionDivider(1)
+            printSectionDivider(2)
             print "\tCoreference chain with multiple types:"
             for reference in relation.allReferences:
                 print "\t\t" + reference.type + ": " + str(reference.spansContent)
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Confirm that all Identical Relations (" + str(len(identicalRelations)) + ") are mutually independent (do not share annotations)"
     independentIdenticalRelations = 0
     for relation in identicalRelations:
@@ -110,13 +114,13 @@ def processDocumentThymeMLData(data, documentName, documentContents):
     else:
         print "\t All identical relations are independent."
 
-    # printSectionDivider(0)
+    # printSectionDivider(1)
     # print "Confirm that all Events are anchored to the timeline (Whether this anchoring is as specific as a TLINK to a TIMEX3 or general as the DocTimeRel marking)..."
     # for event in events:
     #     if not event.isAnchored(relations):
     #         print "Event (" + event.text + ") is not anchored!!!"
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Replacing TLINK relationship source/target entities with the coreference chain relation they belong to (if any)"
 
     print "TLINK Relations"
@@ -124,15 +128,21 @@ def processDocumentThymeMLData(data, documentName, documentContents):
     # print "ALINK Relations" # We are no longer handling ALINK relations
     # mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     selfReferentialRelations = []
     print "Searching for self-referential temporal relations"
     for relation in tlinkRelations:
         if relation.properties["Source"] is relation.properties["Target"]:
             selfReferentialRelations.append(relation)
             print "\t\tR1: " + relation.properties["Source"].id + " " + relation.properties["Type"] + " " + relation.properties["Target"].id
+            print "\t\t\t" + str(relation.spansContent) + " " + relation.properties["Type"] + " " + str(relation.spansContent)
+            originalSource = relation.properties["OriginalSource"]
+            originalTarget = relation.properties["OriginalTarget"]
+            if originalSource is not None or originalTarget is not None:
+                print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                print "\t\t\t" + str(originalSource.spansContent) + " " + relation.properties["Type"] + " " + str(originalTarget.spansContent)
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Performing relation inferencing..."
 
     conflictingRelationPairs = []
@@ -177,7 +187,7 @@ def processDocumentThymeMLData(data, documentName, documentContents):
                     referenceAlignment = relation1.properties["Source"] is relation2.properties["Source"]  # x R1 y, x R2 y
 
                     if referenceAlignment:
-                        relationConflict = relation1.type == relation2.type
+                        relationConflict = relation1.type != relation2.type
                     else:
                         relationConflict = (relation1.type == "BEGINS-ON" and relation2.type == "ENDS-ON") or (relation2.type == "BEGINS-ON" and relation1.type == "ENDS-ON")                    
 
@@ -280,9 +290,31 @@ def processDocumentThymeMLData(data, documentName, documentContents):
                         
                     if not relationAlreadyExists:
                         print "\t\tApplying temporal closure"
+
                         print "\t\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
+                        print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
+                        originalSource = relation1.properties["OriginalSource"]
+                        originalTarget = relation1.properties["OriginalTarget"]
+                        if originalSource is not None or originalTarget is not None:
+                            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                            print "\t\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
+
                         print "\t\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
-                        print "\t\t\tR3: " + newRelation.properties["Source"].id + " " + newRelation.properties["Type"] + " " + newRelation.properties["Target"].id 
+                        print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
+                        originalSource = relation2.properties["OriginalSource"]
+                        originalTarget = relation2.properties["OriginalTarget"]
+                        if originalSource is not None or originalTarget is not None:
+                            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                            print "\t\t\t" + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent)
+
+                        print "\t\t\tR3: " + newRelation.properties["Source"].id + " " + newRelation.properties["Type"] + " " + newRelation.properties["Target"].id
+                        print "\t\t\t" + str(newRelation.spansContent) + " " + newRelation.properties["Type"] + " " + str(newRelation.spansContent)
+                        originalSource = newRelation.properties["OriginalSource"]
+                        originalTarget = newRelation.properties["OriginalTarget"]
+                        if originalSource is not None or originalTarget is not None:
+                            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                            print "\t\t\t" + str(originalSource.spansContent) + " " + relanewRelationtion2.properties["Type"] + " " + str(originalTarget.spansContent)
+                             
 
                         foundImplicitRelation = True
                         tlinkRelations.append(newRelation)
@@ -293,17 +325,28 @@ def processDocumentThymeMLData(data, documentName, documentContents):
                     if len(uniqueReferences) is not 4:
                         print "ERROR: There should always be 4 unique annotations when there is no relationship between the 2 relations. Found (" + str(len(uniqueReferences)) + ")"
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
 
     for (relation1, relation2) in conflictingRelationPairs:
         
         print "\tConflict:"
+        
         print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
-        print "\t\t\t" + str(relation1.spansContent) + " " + len(relation1.properties["Type"])*" " + " " + str(relation1.spansContent)
-        print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
-        print "\t\t\t" + str(relation2.spansContent) + " " + len(relation2.properties["Type"])*" " + str(relation2.spansContent) 
+        print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
+        originalSource = relation1.properties["OriginalSource"]
+        originalTarget = relation1.properties["OriginalTarget"]
+        if originalSource is not None or originalTarget is not None:
+            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+            print "\t\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
 
+        print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
+        print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
+        originalSource = relation2.properties["OriginalSource"]
+        originalTarget = relation2.properties["OriginalTarget"]
+        if originalSource is not None or originalTarget is not None:
+            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+            print "\t\t\t" + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent) 
 
 def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChains):
 
@@ -319,12 +362,14 @@ def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChain
             # Source
             if temporalRelation.properties["Source"] in references:
                 # print "Found TLINK relation with Source belonging to a coreference chain relation"
+                temporalRelation.properties["OriginalSource"] = temporalRelation.properties["Source"] 
                 temporalRelation.properties["Source"] = coreferenceChain
                 replaced += 1
 
             # Target
             if temporalRelation.properties["Target"] in references:
                 # print "Found TLINK relation with Target belonging to a coreference chain relation"
+                temporalRelation.properties["OriginalTarget"] = temporalRelation.properties["Target"]
                 temporalRelation.properties["Target"] = coreferenceChain
                 replaced += 1
 
@@ -351,13 +396,13 @@ def main():
 
     print "Document Root Directory: " + documentDirectory
 
-    printSectionDivider(0)
+    printSectionDivider(1)
     print "Generating THYME data model for each document and XML pair"
     for i, folder in enumerate(clinicFolders): # Tim confirmed that currently we are not doing cross-document annotation
     
-        # e.g. ID001_clinic_001
+        printSectionDivider(0)
 
-        documentName = folder # document name is same as folder
+        documentName = folder # document name is same as folder, e.g. ID001_clinic_001
         documentPath = documentDirectory + folder + "/" + documentName
         print "\tDocument: " + documentPath
 
@@ -370,13 +415,20 @@ def main():
         
         print "\tXML: " + xmlPath
 
-        printSectionDivider(0)
-        print "\tReading Files..."
-        printSectionDivider(0)
+        printSectionDivider(1)
+        print "\tReading Document and XML..."
+        printSectionDivider(1)
         data = ThymeMLData.from_file(xmlPath, documentContents)
         processDocumentThymeMLData(data, documentName, documentContents)
         
-        break; # For now just process the first document
+        xmlPath = None
+        data = None
+        _XMLWrapper = None
+
+        import thymeml
+        reload(thymeml)
+        
+        # break; # For now just process the first document
 
 main()
 
