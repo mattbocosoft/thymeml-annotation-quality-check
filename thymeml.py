@@ -190,7 +190,7 @@ class ThymeMLAnnotation(_XMLWrapper):
         result = hash(self.spans)
         result = 31 * result + hash(self.type)
         result = 31 * result + hash(self.parents_type)
-        result = 31 * result + hash(self.properties)
+        # result = 31 * result + hash(self.properties)
         return result
 
     def __lt__(self, other):
@@ -231,6 +231,10 @@ class ThymeMLAnnotation(_XMLWrapper):
 
     @property
     def spans(self):
+        raise NotImplementedError
+
+    @property
+    def flatSpans(self):
         raise NotImplementedError
 
     @property
@@ -369,6 +373,10 @@ class ThymeMLEntity(ThymeMLAnnotation):
                      for span_text in spans_text.split(";"))
 
     @property
+    def flatSpans(self):
+        return self.spans
+
+    @property
     def spansContent(self):
         contentSpans = []
         for span in self.spans:
@@ -397,18 +405,31 @@ class ThymeMLRelation(ThymeMLAnnotation):
             self.properties[name].spans
             for name in sorted(self.properties)
             if isinstance(self.properties[name], ThymeMLAnnotation))
+    
+    @property
+    def flatSpans(self):
+        subSpanList = list(
+            self.properties[name].flatSpans
+            for name in sorted(self.properties)
+            if isinstance(self.properties[name], ThymeMLAnnotation))
+        flatten = []
+        for item in subSpanList:
+            if type(item) is tuple:
+                flatten += item
+            else:
+                flatten.extend(item)
+        return flatten
 
     @property
     def spansContent(self):
         contentSpans = []
-        for spanGroup in self.spans:
-            for span in spanGroup:
-                if len(span) == 2:
-                    contentSpans.append(self.document[span[0]:span[1]])
+        for span in self.flatSpans:
+            contentSpans.append(self.document[span[0]:span[1]])
         return contentSpans
     
     @property
     def allReferences(self):
+        references = []  
         if self.parents_type == "CorefChains":
             if self.type == "Identical":
                 references = [self.properties["FirstInstance"]]
@@ -423,5 +444,6 @@ class ThymeMLRelation(ThymeMLAnnotation):
         elif self.parents_type == "TemporalRelations":
             if self.type == "TLINK" or self.type == "ALINK":
                 references = [self.properties["Source"], self.properties["Target"]]
+            else:
+                print "Could not find references for temporal relation subtype: " + self.type
         return references
-        

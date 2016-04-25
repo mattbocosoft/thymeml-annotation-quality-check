@@ -16,7 +16,7 @@ def printSectionDivider(depth):
     elif depth == 2:
         print "\t\t------------------" 
 
-def processDocumentThymeMLData(data):
+def processDocumentThymeMLData(data, documentName, documentContents):
 
     print "\tProcessing Data..."
     printSectionDivider(0)
@@ -110,14 +110,200 @@ def processDocumentThymeMLData(data):
     else:
         print "\t All identical relations are independent."
 
+    # printSectionDivider(0)
+    # print "Confirm that all Events are anchored to the timeline (Whether this anchoring is as specific as a TLINK to a TIMEX3 or general as the DocTimeRel marking)..."
+    # for event in events:
+    #     if not event.isAnchored(relations):
+    #         print "Event (" + event.text + ") is not anchored!!!"
 
     printSectionDivider(0)
-    print "Replacing TLINK/ALINK relationship source/target entities with the coreference chain relation they belong to (if any)"
-    
+    print "Replacing TLINK relationship source/target entities with the coreference chain relation they belong to (if any)"
+
     print "TLINK Relations"
     mergeCoreferentEventsInTemporalRelations(tlinkRelations, identicalRelations)
-    print "ALINK Relations"
-    mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
+    # print "ALINK Relations" # We are no longer handling ALINK relations
+    # mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
+
+    printSectionDivider(0)
+    selfReferentialRelations = []
+    print "Searching for self-referential temporal relations"
+    for relation in tlinkRelations:
+        if relation.properties["Source"] is relation.properties["Target"]:
+            selfReferentialRelations.append(relation)
+            print "\t\tR1: " + relation.properties["Source"].id + " " + relation.properties["Type"] + " " + relation.properties["Target"].id
+
+    printSectionDivider(0)
+    print "Performing relation inferencing..."
+
+    conflictingRelationPairs = []
+    foundImplicitRelation = True
+    while foundImplicitRelation:
+        foundImplicitRelation = False
+        
+        for relation1 in tlinkRelations:
+
+            if relation1 in selfReferentialRelations:
+                continue
+
+            for relation2 in tlinkRelations:
+
+                if relation2 in selfReferentialRelations:
+                    continue
+                
+                if relation1 is relation2:
+                    continue
+
+                allReferences = relation1.allReferences[:]
+                allReferences.extend(relation2.allReferences)
+
+                if len(allReferences) is not 4:
+                    # print "ERROR: There should always be 4 annotations to compare when propogating relations. Found (" + str(len(allReferences)) + ")"
+                    continue
+
+                uniqueReferences = set(allReferences) # This did not work because of non-hashable lists
+                # uniqueReferences = list()
+                # for reference in allReferences:
+                #     isUnique = True
+                #     for uniqueReference in uniqueReferences:
+                #         if uniqueReference.id == reference.id:
+                #             isUnique = False
+                #     if isUnique:
+                #         uniqueReferences.append(reference)
+
+                if len(uniqueReferences) == 2: # Complete overlap... look for conflicts (2 overlapping references)
+                    
+                    # print "\t\tChecking for conflict or agreement"
+
+                    referenceAlignment = relation1.properties["Source"] is relation2.properties["Source"]  # x R1 y, x R2 y
+
+                    if referenceAlignment:
+                        relationConflict = relation1.type == relation2.type
+                    else:
+                        relationConflict = (relation1.type == "BEGINS-ON" and relation2.type == "ENDS-ON") or (relation2.type == "BEGINS-ON" and relation1.type == "ENDS-ON")                    
+
+                    # Relation Conflict
+                    if relationConflict:
+                        relationPair = (relation1, relation2)
+                        if relationPair not in conflictingRelationPairs:
+                            conflictingRelationPairs.append(relationPair)
+
+                elif len(uniqueReferences) == 3: # Create new explicit relation (1 overlapping reference)
+
+                    '''
+                    We use Allen's Transitivity Table for the Twelve Temporal Relations, except that
+                    THYME Annotation Guidelines only support 5 different temporal relation TLINK types:
+                        "BEFORE", "CONTAINS", "OVERLAP", "BEGINS-ON", "ENDS-ON"
+                    Therefore we first do some magic to convert THYME TLINK types to Allen's relations
+                    when the events are reversed, and then once the temporal closure is complete, we convert
+                    Allen's relation types back to THYME relation types. In this way, we can support the following types:
+                        "BEFORE", "AFTER", "DURING", "CONTAINS", "OVERLAP", "BEGINS-ON", "ENDS-ON"
+                    Since THYME Annotation Guidelines merge Allen's "Overlaps" and "Overlapped-By" into a single type,
+                    therefore we do not apply temporal closure to temporal relation TLINKs of type "OVERLAP"  
+                    '''
+
+                    newRelationType = ""
+                    relation1Reversed = relation1.properties["Source"] is relation2.properties["Source"] # y R1 x, y R2 z
+                    relation2Reversed = relation1.properties["Source"] is relation2.properties["Target"] # y R1 x, z R2 y
+
+                    # Reverse the relation if necessary, since ThymeML does not use AFTER or DURING relations
+                    relation1Resolved = relation1.properties["Type"]
+                    if relation1.properties["Type"] == "BEFORE" and relation1Reversed:
+                        relation1Resolved = "AFTER"
+                    elif relation1.properties["Type"] == "CONTAINS" and relation1Reversed:
+                        relation1Resolved = "DURING"
+
+                    relation2Resolved = relation2.type
+                    if relation2.properties["Type"] == "BEFORE" and relation2Reversed:
+                        relation2Resolved = "AFTER"
+                    elif relation2.properties["Type"] == "CONTAINS" and relation2Reversed:
+                        relation2Resolved = "DURING"
+
+                    # Temporal closure
+                    if relation1Resolved == "BEFORE":
+                        if relation2Resolved in ["BEFORE", "CONTAINS", "ENDS-ON"]:
+                            newRelationType = "BEFORE"
+                    if relation1Resolved == "AFTER":
+                        if relation2Resolved in ["AFTER", "CONTAINS", "BEGINS-ON"]:
+                            newRelationType = "AFTER"
+                    if relation1Resolved == "DURING":
+                        if relation2Resolved in ["BEFORE", "ENDS-ON"]:
+                            newRelationType = "BEFORE"
+                        elif relation2Resolved in ["AFTER", "BEGINS-ON"]:
+                            newRelationType = "AFTER"
+                        elif relation2Resolved in ["DURING"]:
+                            newRelationType = "DURING"
+                    elif relation1Resolved == "CONTAINS":
+                        if relation2Resolved in ["CONTAINS"]:
+                            newRelationType = "CONTAINS"
+                    elif relation1Resolved == "ENDS-ON":
+                        if relation2Resolved in ["BEFORE", "CONTAINS", "ENDS-ON"]:
+                            newRelationType = "BEFORE"
+                    elif relation1Resolved == "BEGINS-ON":
+                        if relation2Resolved in ["AFTER", "CONTAINS", "BEGINS-ON"]:
+                            newRelationType = "AFTER"
+
+                    if newRelationType == "":
+                        continue
+
+                    # Reverse the relation again if necessary, since ThymeML does not use AFTER or DURING relations
+                    shouldReverseNewRelation = False
+                    if newRelationType == "AFTER":
+                        newRelationType = "BEFORE"
+                        shouldReverseNewRelation = True
+                    elif newRelationType == "DURING":
+                        newRelationType = "CONTAINS"
+                        shouldReverseNewRelation = True
+                    
+                    source = relation1.properties["Source"] if shouldReverseNewRelation else relation2.properties["Target"] 
+                    target = relation2.properties["Target"] if shouldReverseNewRelation else relation1.properties["Source"]
+
+                    # Create new temporal relation
+                    newRelationID = str(len(relations) + 1) + "@" + documentName + "@gold"
+
+                    newRelationXMLString = """<relation>
+                                        <id>""" + newRelationID + """</id>
+                                        <type>TLINK</type>
+                                        <parentsType>TemporalRelations</parentsType>
+                                        <properties>
+                                        <Source>""" + source.id + """</Source>
+                                        <Type>""" + newRelationType + """</Type>
+                                        <Target>""" + target.id + """</Target>
+                                        </properties>
+                                        </relation>"""
+                    newRelationXML = ElementTree.fromstring(newRelationXMLString)
+                    newRelation = ThymeMLRelation(newRelationXML, data.annotations, documentContents)
+
+                    relationAlreadyExists = False
+                    for relation in tlinkRelations:
+                        if relation.properties["Source"] is source and relation.properties["Target"] is target and relation.type == newRelationType:
+                            relationAlreadyExists = True
+                        
+                    if not relationAlreadyExists:
+                        print "\t\tApplying temporal closure"
+                        print "\t\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
+                        print "\t\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
+                        print "\t\t\tR3: " + newRelation.properties["Source"].id + " " + newRelation.properties["Type"] + " " + newRelation.properties["Target"].id 
+
+                        foundImplicitRelation = True
+                        tlinkRelations.append(newRelation)
+
+                else: # There should be exactly 4 unique annotations (0 overlapping references)
+                    # print "\t\tRelations have nothing in common"
+
+                    if len(uniqueReferences) is not 4:
+                        print "ERROR: There should always be 4 unique annotations when there is no relationship between the 2 relations. Found (" + str(len(uniqueReferences)) + ")"
+
+    printSectionDivider(0)
+    print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
+
+    for (relation1, relation2) in conflictingRelationPairs:
+        
+        print "\tConflict:"
+        print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
+        print "\t\t\t" + str(relation1.spansContent) + " " + len(relation1.properties["Type"])*" " + " " + str(relation1.spansContent)
+        print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
+        print "\t\t\t" + str(relation2.spansContent) + " " + len(relation2.properties["Type"])*" " + str(relation2.spansContent) 
+
 
 def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChains):
 
@@ -188,7 +374,7 @@ def main():
         print "\tReading Files..."
         printSectionDivider(0)
         data = ThymeMLData.from_file(xmlPath, documentContents)
-        processDocumentThymeMLData(data)
+        processDocumentThymeMLData(data, documentName, documentContents)
         
         break; # For now just process the first document
 
