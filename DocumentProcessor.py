@@ -158,10 +158,11 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
 
                     referenceAlignment = relation1.properties["Source"] is relation2.properties["Source"]  # x R1 y, x R2 y
 
+                    relationConflict = False
                     if referenceAlignment:
-                        relationConflict = relation1.type != relation2.type
+                        relationConflict = relation1.properties["Type"] != relation2.properties["Type"]
                     else:
-                        relationConflict = (relation1.type == "BEGINS-ON" and relation2.type == "ENDS-ON") or (relation2.type == "BEGINS-ON" and relation1.type == "ENDS-ON")                    
+                        relationConflict = (relation1.properties["Type"] == "BEGINS-ON" and relation2.properties["Type"] == "ENDS-ON") or (relation2.properties["Type"] == "BEGINS-ON" and relation1.properties["Type"] == "ENDS-ON")                    
 
                     # Relation Conflict
                     if relationConflict:
