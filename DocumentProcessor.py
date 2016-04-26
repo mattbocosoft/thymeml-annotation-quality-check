@@ -128,11 +128,11 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
     while foundImplicitRelation:
         foundImplicitRelation = False
         
-        for relation1 in tlinkRelations:
+        for i, relation1 in enumerate(tlinkRelations):
 
-            for relation2 in tlinkRelations:
+            for j, relation2 in enumerate(tlinkRelations):
 
-                if relation1 is relation2:
+                if j <= i:
                     continue
 
                 allReferences = relation1.allReferences[:]
