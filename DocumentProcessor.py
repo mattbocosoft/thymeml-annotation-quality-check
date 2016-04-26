@@ -279,28 +279,28 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                         # print "\tApplying temporal closure"
 
                         # print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
-                        # print "\t\t" + str(relation1.properties["Source"].spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.properties["Target"].spansContent)
+                        # print "\t\t    " + str(relation1.properties["Source"].spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.properties["Target"].spansContent)
                         # if "OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties:
                         #     originalSource = relation1.properties["OriginalSource"] if "OriginalSource" in relation1.properties else relation1.properties["Source"]
                         #     originalTarget = relation1.properties["OriginalTarget"] if "OriginalTarget" in relation1.properties else relation1.properties["Target"]
-                        #     print "\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-                        #     print "\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
+                        #     print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                        #     print "\t\t    " + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
 
                         # print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
-                        # print "\t\t" + str(relation2.properties["Source"].spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.properties["Target"].spansContent)
+                        # print "\t\t    " + str(relation2.properties["Source"].spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.properties["Target"].spansContent)
                         # if "OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties:
                         #     originalSource = relation2.properties["OriginalSource"] if "OriginalSource" in relation2.properties else relation2.properties["Source"]
                         #     originalTarget = relation2.properties["OriginalTarget"] if "OriginalTarget" in relation2.properties else relation2.properties["Target"]
-                        #     print "\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-                        #     print "\t\t" + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent)
+                        #     print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                        #     print "\t\t    " + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent)
 
                         # print "\t\tR3: " + newRelation.properties["Source"].id + " " + newRelation.properties["Type"] + " " + newRelation.properties["Target"].id
-                        # print "\t\t" + str(newRelation.properties["Source"].spansContent) + " " + newRelation.properties["Type"] + " " + str(newRelation.properties["Target"].spansContent)
+                        # print "\t\t    " + str(newRelation.properties["Source"].spansContent) + " " + newRelation.properties["Type"] + " " + str(newRelation.properties["Target"].spansContent)
                         # if "OriginalSource" in newRelation.properties or "OriginalTarget" in newRelation.properties:
                         #     originalSource = newRelation.properties["OriginalSource"] if "OriginalSource" in newRelation.properties else newRelation.properties["Source"]
                         #     originalTarget = newRelation.properties["OriginalTarget"] if "OriginalTarget" in newRelation.properties else newRelation.properties["Target"]
-                        #     print "\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-                        #     print "\t\t" + str(originalSource.spansContent) + " " + relanewRelationtion2.properties["Type"] + " " + str(originalTarget.spansContent)
+                        #     print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                        #     print "\t\t    " + str(originalSource.spansContent) + " " + relanewRelationtion2.properties["Type"] + " " + str(originalTarget.spansContent)
 
                         foundImplicitRelation = True
                         tlinkRelations.append(newRelation)
@@ -318,6 +318,29 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
     printSectionDivider(1)
     print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
 
+    for (relation1, relation2) in conflictingRelationPairs:
+
+        identityCoreferenceConflict = type(relation1.properties["Source"]) is ThymeMLRelation or type(relation2.properties["Source"]) is ThymeMLRelation 
+        if identityCoreferenceConflict:
+            print "\tConflict (due to identity coreference chain):"
+        else:
+            print "\tConflict (due to temporal closure):"
+        print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
+        print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
+        if ("OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties) and not identityCoreferenceConflict:
+            originalSource = relation1.properties["OriginalSource"] if "OriginalSource" in relation1.properties else relation1.properties["Source"]
+            originalTarget = relation1.properties["OriginalTarget"] if "OriginalTarget" in relation1.properties else relation1.properties["Target"]
+            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+            print "\t\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
+
+        print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
+        print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
+        if ("OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties) and not identityCoreferenceConflict:
+            originalSource = relation2.properties["OriginalSource"] if "OriginalSource" in relation2.properties else relation2.properties["Source"]
+            originalTarget = relation2.properties["OriginalTarget"] if "OriginalTarget" in relation2.properties else relation2.properties["Target"]
+            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+            print "\t\t\t" + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent)
+
     printSectionDivider(1)
     selfReferentialRelations = []
     print "Searching for self-referential temporal relations"
@@ -332,27 +355,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                 print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
                 print "\t\t\t" + str(originalSource.spansContent) + " " + relation.properties["Type"] + " " + str(originalTarget.spansContent)
     if len(selfReferentialRelations) == 0:
-        print "\tNone Found"
-
-    for (relation1, relation2) in conflictingRelationPairs:
-        
-        print "\tConflict:"
-        
-        print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
-        print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
-        if "OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties:
-            originalSource = relation1.properties["OriginalSource"] if "OriginalSource" in relation1.properties else relation1.properties["Source"]
-            originalTarget = relation1.properties["OriginalTarget"] if "OriginalTarget" in relation1.properties else relation1.properties["Target"]
-            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-            print "\t\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
-
-        print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
-        print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
-        if "OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties:
-            originalSource = relation2.properties["OriginalSource"] if "OriginalSource" in relation2.properties else relation2.properties["Source"]
-            originalTarget = relation2.properties["OriginalTarget"] if "OriginalTarget" in relation2.properties else relation2.properties["Target"]
-            print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-            print "\t\t\t" + str(originalSource.spansContent) + " " + relation2.properties["Type"] + " " + str(originalTarget.spansContent) 
+        print "\tNone Found" 
 
 def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChains):
 
