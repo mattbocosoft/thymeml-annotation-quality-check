@@ -330,7 +330,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
             print "\tConflict (due to temporal closure):"
         print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
         print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
-        if ("OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties) and not identityCoreferenceConflict:
+        if ("OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties):
             originalSource = relation1.properties["OriginalSource"] if "OriginalSource" in relation1.properties else relation1.properties["Source"]
             originalTarget = relation1.properties["OriginalTarget"] if "OriginalTarget" in relation1.properties else relation1.properties["Target"]
             print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
@@ -338,7 +338,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
 
         print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
         print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
-        if ("OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties) and not identityCoreferenceConflict:
+        if ("OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties):
             originalSource = relation2.properties["OriginalSource"] if "OriginalSource" in relation2.properties else relation2.properties["Source"]
             originalTarget = relation2.properties["OriginalTarget"] if "OriginalTarget" in relation2.properties else relation2.properties["Target"]
             print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
