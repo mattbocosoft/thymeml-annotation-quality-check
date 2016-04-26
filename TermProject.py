@@ -15,7 +15,8 @@ def contentsOfFile(filename):
 def main():
 
     documentDirectory = "./Tim-Round1/THYME-Analysis/"
-    xmlDirectory = "./Tim-Round2/thyme2mergedfiles/";
+    xmlDirectory = "./Tim-Round2/thyme2mergedfiles/"
+    outputDirectory = "./output/"
     
     allFolders = [f for f in listdir(xmlDirectory) if not isfile(join(xmlDirectory, f))]
     # onlyfiles = [f for f in os.listdir(currentDir) if os.path.isfile(join(currentDir, f))]
@@ -33,6 +34,7 @@ def main():
     print "Document Root Directory: " + documentDirectory
 
     print "Generating THYME data model for each document and XML pair"
+    print "Output directory: " + outputDirectory
 
     orig_stdout = sys.stdout
 
@@ -46,8 +48,8 @@ def main():
         # if documentName not in ["ID014_clinic_042", "ID023_clinic_067", "ID025_clinic_075", "ID067_clinic_197"]:
         #     continue
 
-        outputPath = "Output/" + documentName + "-processed.txt"
-        print "Processing " + documentName + " (" + str(i + 1) + " of " + str(len(clinicFolders)) + ")"
+        outputPath = outputDirectory + documentName + "-processed.txt"
+        print "\tProcessing " + documentName + " (" + str(i + 1) + " of " + str(len(clinicFolders)) + ")"
             
         if os.path.isfile(outputPath): # Don't process documents that already have generated output files
             continue
