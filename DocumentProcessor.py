@@ -120,22 +120,6 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
     # mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
 
     printSectionDivider(1)
-    selfReferentialRelations = []
-    print "Searching for self-referential temporal relations"
-    for relation in tlinkRelations:
-        if relation.properties["Source"] is relation.properties["Target"]:
-            selfReferentialRelations.append(relation)
-            print "\t\tR1: " + relation.properties["Source"].id + " " + relation.properties["Type"] + " " + relation.properties["Target"].id
-            print "\t\t\t" + str(relation.spansContent) + " " + relation.properties["Type"] + " " + str(relation.spansContent)
-            if "OriginalSource" in relation.properties or "OriginalTarget" in relation.properties:
-                originalSource = relation.properties["OriginalSource"] if "OriginalSource" in relation.properties else relation.properties["Source"]
-                originalTarget = relation.properties["OriginalTarget"] if "OriginalTarget" in relation.properties else relation.properties["Target"]
-                print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
-                print "\t\t\t" + str(originalSource.spansContent) + " " + relation.properties["Type"] + " " + str(originalTarget.spansContent)
-    if len(selfReferentialRelations) == 0:
-        print "\tNone Found"
-
-    printSectionDivider(1)
     print "Performing relation inferencing..."
 
     conflictingRelationPairs = []
@@ -146,14 +130,8 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
         
         for relation1 in tlinkRelations:
 
-            if relation1 in selfReferentialRelations:
-                continue
-
             for relation2 in tlinkRelations:
 
-                if relation2 in selfReferentialRelations:
-                    continue
-                
                 if relation1 is relation2:
                     continue
 
@@ -205,9 +183,17 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                     therefore we do not apply temporal closure to temporal relation TLINKs of type "OVERLAP"  
                     '''
 
+                    # x R1 y, y R2 z # None reversed
                     newRelationType = ""
-                    relation1Reversed = relation1.properties["Source"] is relation2.properties["Source"] # y R1 x, y R2 z
-                    relation2Reversed = relation1.properties["Source"] is relation2.properties["Target"] # y R1 x, z R2 y
+                    relation1Reversed = False
+                    relation2Reversed = False
+                    if relation1.properties["Source"] is relation2.properties["Source"]: # y R1 x, y R2 z # 1st reversed
+                        relation1Reversed = True
+                    elif relation1.properties["Target"] is relation2.properties["Target"]: # x R1 y, z R2 y # 2nd reversed
+                        relation2Reversed = True
+                    elif relation1.properties["Source"] is relation2.properties["Target"]: # y R1 x, z R2 y # 1st/2nd reversed
+                        relation1Reversed = True
+                        relation2Reversed = True
 
                     # Reverse the relation if necessary, since ThymeML does not use AFTER or DURING relations
                     relation1Resolved = relation1.properties["Type"]
@@ -257,9 +243,14 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                     elif newRelationType == "DURING":
                         newRelationType = "CONTAINS"
                         shouldReverseNewRelation = True
-                    
-                    source = relation1.properties["Source"] if shouldReverseNewRelation else relation2.properties["Target"] 
-                    target = relation2.properties["Target"] if shouldReverseNewRelation else relation1.properties["Source"]
+
+                    source = relation1.properties["Target"] if relation1Reversed else relation1.properties["Source"] 
+                    target = relation2.properties["Source"] if relation2Reversed else relation2.properties["Target"]
+
+                    if shouldReverseNewRelation:
+                        tempReference = source
+                        source = target
+                        target = tempReference
 
                     # Create new temporal relation
                     newRelationID = str(len(relations) + 1) + "@" + documentName + "@gold"
@@ -322,9 +313,25 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                         # print "\tERROR: There should always be 4 unique annotations when there is no relationship between the 2 relations. Found (" + str(len(uniqueReferences)) + ")"
 
     print "\tCreated " + str(implicitRelationCount) + " new relations"
-
+    
     printSectionDivider(1)
     print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
+
+    printSectionDivider(1)
+    selfReferentialRelations = []
+    print "Searching for self-referential temporal relations"
+    for relation in tlinkRelations:
+        if relation.properties["Source"] is relation.properties["Target"]:
+            selfReferentialRelations.append(relation)
+            print "\t\t R: " + relation.properties["Source"].id + " " + relation.properties["Type"] + " " + relation.properties["Target"].id
+            print "\t\t\t" + str(relation.spansContent) + " " + relation.properties["Type"] + " " + str(relation.spansContent)
+            if "OriginalSource" in relation.properties or "OriginalTarget" in relation.properties:
+                originalSource = relation.properties["OriginalSource"] if "OriginalSource" in relation.properties else relation.properties["Source"]
+                originalTarget = relation.properties["OriginalTarget"] if "OriginalTarget" in relation.properties else relation.properties["Target"]
+                print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
+                print "\t\t\t" + str(originalSource.spansContent) + " " + relation.properties["Type"] + " " + str(originalTarget.spansContent)
+    if len(selfReferentialRelations) == 0:
+        print "\tNone Found"
 
     for (relation1, relation2) in conflictingRelationPairs:
         
