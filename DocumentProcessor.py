@@ -158,6 +158,9 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
 
                     referenceAlignment = relation1.properties["Source"] is relation2.properties["Source"]  # x R1 y, x R2 y
 
+                    if relation1.properties["Type"] == "OVERLAP" or relation2.properties["Type"] == "OVERLAP": # Do not support conflict discovery for relation type "OVERLAP"
+                        continue
+
                     relationConflict = False
                     if referenceAlignment:
                         relationConflict = relation1.properties["Type"] != relation2.properties["Type"]
