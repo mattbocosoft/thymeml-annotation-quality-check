@@ -279,8 +279,9 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
 
                     relationAlreadyExists = False
                     for relation in tlinkRelations:
-                        if relation.properties["Source"] is source and relation.properties["Target"] is target and relation.type == newRelationType:
+                        if relation.properties["Source"].id == source.id and relation.properties["Target"].id == target.id and relation.properties["Type"] == newRelationType:
                             relationAlreadyExists = True
+                            break
                         
                     if not relationAlreadyExists:
                         # print "\tApplying temporal closure"
