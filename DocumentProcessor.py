@@ -101,7 +101,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                 if reference in relation2.allReferences:
                     independentIdenticalRelations += 1
     if independentIdenticalRelations > 0:
-        print "\tERROR: Found (" + str(independentIdenticalRelations) + ")Identical relations with references in common!"
+        print "\tERROR: Found (" + str(independentIdenticalRelations) + ") Identical relations with references in common!"
     else:
         print "\t All identical relations are independent."
 
@@ -316,7 +316,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                     # if len(uniqueReferences) is not 4:
                         # print "\tERROR: There should always be 4 unique annotations when there is no relationship between the 2 relations. Found (" + str(len(uniqueReferences)) + ")"
 
-    print "\tCreated " + str(implicitRelationCount) + " new relations"
+    print "\tCreated " + str(implicitRelationCount) + " new TLINK relations for a total of " + str(len(tlinkRelations))
     
     printSectionDivider(1)
     print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
