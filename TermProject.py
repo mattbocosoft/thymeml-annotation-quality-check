@@ -1,5 +1,6 @@
 import os
 import sys
+import gc
 from os import listdir # Directory
 from os.path import isfile, join # Directory
 import codecs # Reading file with utf-8 encoding
@@ -37,14 +38,24 @@ def main():
 
     for i, folder in enumerate(clinicFolders): # Tim confirmed that currently we are not doing cross-document annotation
 
+        sys.stdout = orig_stdout
+
         documentName = folder # document name is same as folder, e.g. ID001_clinic_001
         documentPath = documentDirectory + folder + "/" + documentName
 
+        # if documentName not in ["ID014_clinic_042", "ID023_clinic_067", "ID025_clinic_075", "ID067_clinic_197"]:
+        #     continue
+
         outputPath = "Output/" + documentName + "-processed.txt"
+        print "Processing " + documentName + " (" + str(i + 1) + " of " + str(len(clinicFolders)) + ")"
+            
+        if os.path.isfile(outputPath): # Don't process documents that already have generated output files
+            continue
 
         dir = os.path.dirname(outputPath)
         if not os.path.exists(dir):
             os.makedirs(dir)
+
         f = file(outputPath, 'w')
         sys.stdout = f
 
@@ -69,7 +80,7 @@ def main():
         
         f.close()
         
-        # break; # For now just process the first document
+        gc.collect()
     
     sys.stdout = orig_stdout
     print "Done with processing all documents"
