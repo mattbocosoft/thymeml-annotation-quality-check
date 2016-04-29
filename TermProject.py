@@ -38,6 +38,9 @@ def main():
 
     orig_stdout = sys.stdout
 
+    temporalClosureConflictTotalCount = 0
+    identityCoreferenceResolutionConflictTotalCount = 0
+    selfReferentialTemporalRelationTotalCount = 0
     for i, folder in enumerate(clinicFolders): # Tim confirmed that currently we are not doing cross-document annotation
 
         sys.stdout = orig_stdout
@@ -73,7 +76,10 @@ def main():
         
         print "\tXML: " + xmlPath
 
-        processDocumentThymeMLData(xmlPath, documentName, documentContents)
+        (temporalClosureConflictCount, identityCoreferenceResolutionConflictCount, selfReferentialTemporalRelationCount) = processDocumentThymeMLData(xmlPath, documentName, documentContents)
+        temporalClosureConflictTotalCount += temporalClosureConflictCount
+        identityCoreferenceResolutionConflictTotalCount += identityCoreferenceResolutionConflictCount
+        selfReferentialTemporalRelationTotalCount += selfReferentialTemporalRelationCount
         
         xmlPath = None
         data = None
@@ -83,9 +89,22 @@ def main():
         f.close()
         
         gc.collect()
-    
+
     sys.stdout = orig_stdout
     print "Done with processing all documents"
+
+    totalConflictCount = temporalClosureConflictTotalCount + identityCoreferenceResolutionConflictTotalCount + selfReferentialTemporalRelationTotalCount
+
+    printSectionDivider(1)
+    print "Root Causes of Temporal Inconsistencies"
+    print ""
+    if totalConflictCount > 0:
+        print "Temporal Closure\t\t\t\t\t" + str(temporalClosureConflictTotalCount) + "/" + str(totalConflictCount) + "\t(" + str(100*temporalClosureConflictTotalCount/totalConflictCount) + "%)"
+        print "Identity-Coreference Chain Resolution\t\t\t" + str(identityCoreferenceResolutionConflictTotalCount + selfReferentialTemporalRelationTotalCount) + "/" + str(totalConflictCount) + "\t(" + str(100*(identityCoreferenceResolutionConflictTotalCount + selfReferentialTemporalRelationTotalCount)/totalConflictCount) + "%)"
+        print "\tSelf-Referential Relations\t\t\t" + str(selfReferentialTemporalRelationTotalCount) + "/" + str(totalConflictCount) + "\t|----(" + str(100*selfReferentialTemporalRelationTotalCount/totalConflictCount) + "%)"
+        print "\tRelation Conflicts\t\t\t\t" + str(identityCoreferenceResolutionConflictTotalCount) + "/" + str(totalConflictCount) + "\t|----(" + str(100*identityCoreferenceResolutionConflictTotalCount/totalConflictCount) + "%)"
+    else:
+        print "No temporal inconsistencies found"
 
 print "Starting..."
 main()

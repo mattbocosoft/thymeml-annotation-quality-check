@@ -120,7 +120,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
     # mergeCoreferentEventsInTemporalRelations(alinkRelations, identicalRelations)
 
     printSectionDivider(1)
-    print "Performing relation inferencing..."
+    print "Performing temporal closure..."
 
     conflictingRelationPairs = []
     foundImplicitRelation = True
@@ -321,13 +321,17 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
     printSectionDivider(1)
     print "Found (" + str(len(conflictingRelationPairs)) + ") conflicting relation(s)..."
 
+    temporalClosureConflictCount = 0
+    identityCoreferenceResolutionConflictCount = 0
     for (relation1, relation2) in conflictingRelationPairs:
 
         identityCoreferenceConflict = type(relation1.properties["Source"]) is ThymeMLRelation or type(relation2.properties["Target"]) is ThymeMLRelation 
         if identityCoreferenceConflict:
             print "\tConflict (due to identity coreference chain):"
+            identityCoreferenceResolutionConflictCount += 1
         else:
             print "\tConflict (due to temporal closure):"
+            temporalClosureConflictCount += 1
         print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
         print "\t\t\t" + str(relation1.properties["Source"].spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.properties["Target"].spansContent)
         if ("OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties):
@@ -358,7 +362,23 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
                 print "\t\t    " + originalSource.id + " " + len(relation.properties["Type"])*" " + " " + originalTarget.id
                 print "\t\t\t" + str(originalSource.spansContent) + " " + relation.properties["Type"] + " " + str(originalTarget.spansContent)
     if len(selfReferentialRelations) == 0:
-        print "\tNone Found" 
+        print "\tNone Found"
+    
+    selfReferentialTemporalRelationCount = len(selfReferentialRelations)
+    totalConflictCount = temporalClosureConflictCount + identityCoreferenceResolutionConflictCount + selfReferentialTemporalRelationCount
+
+    printSectionDivider(1)
+    print "Root Causes of Temporal Inconsistencies"
+    print ""
+    if totalConflictCount > 0:
+        print "Temporal Closure\t\t\t\t\t" + str(temporalClosureConflictCount) + "/" + str(totalConflictCount) + "\t(" + str(100*temporalClosureConflictCount/totalConflictCount) + "%)"
+        print "Identity-Coreference Chain Resolution\t\t\t" + str(identityCoreferenceResolutionConflictCount + selfReferentialTemporalRelationCount) + "/" + str(totalConflictCount) + "\t(" + str(100*(identityCoreferenceResolutionConflictCount + selfReferentialTemporalRelationCount)/totalConflictCount) + "%)"
+        print "\tSelf-Referential Relations\t\t\t" + str(selfReferentialTemporalRelationCount) + "/" + str(totalConflictCount) + "\t|----(" + str(100*selfReferentialTemporalRelationCount/totalConflictCount) + "%)"
+        print "\tRelation Conflicts\t\t\t\t" + str(identityCoreferenceResolutionConflictCount) + "/" + str(totalConflictCount) + "\t|----(" + str(100*identityCoreferenceResolutionConflictCount/totalConflictCount) + "%)"
+    else:
+        print "No temporal inconsistencies found"
+    
+    return (temporalClosureConflictCount, identityCoreferenceResolutionConflictCount, selfReferentialTemporalRelationCount)
 
 def mergeCoreferentEventsInTemporalRelations(temporalRelations, coreferenceChains):
 
