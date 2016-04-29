@@ -121,7 +121,8 @@ class ThymeMLAnnotations(_XMLWrapper):
                     raise ValueError("invalid tag: {0}".format(annotation_elem.tag))
                 while annotation.id in self._id_to_annotation:
                     # raise ValueError("duplicate id: {0}".format(annotation.id))
-                    annotation.id += "d"
+                    print "\t\tDuplicate annotation id (" + annotation.id + "). Appending disambiguation suffix..."
+                    annotation.id += "(d)"
                 self._id_to_annotation[annotation.id] = annotation
 
     def __iter__(self):
@@ -410,9 +411,8 @@ class ThymeMLRelation(ThymeMLAnnotation):
     @property
     def flatSpans(self):
         subSpanList = list(
-            self.properties[name].flatSpans
-            for name in sorted(self.properties)
-            if isinstance(self.properties[name], ThymeMLAnnotation))
+            reference.flatSpans
+            for reference in self.allReferences)
         flatten = []
         for item in subSpanList:
             if type(item) is tuple:

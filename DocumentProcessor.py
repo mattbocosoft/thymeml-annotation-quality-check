@@ -323,13 +323,13 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
 
     for (relation1, relation2) in conflictingRelationPairs:
 
-        identityCoreferenceConflict = type(relation1.properties["Source"]) is ThymeMLRelation or type(relation2.properties["Source"]) is ThymeMLRelation 
+        identityCoreferenceConflict = type(relation1.properties["Source"]) is ThymeMLRelation or type(relation2.properties["Target"]) is ThymeMLRelation 
         if identityCoreferenceConflict:
             print "\tConflict (due to identity coreference chain):"
         else:
             print "\tConflict (due to temporal closure):"
         print "\t\tR1: " + relation1.properties["Source"].id + " " + relation1.properties["Type"] + " " + relation1.properties["Target"].id
-        print "\t\t\t" + str(relation1.spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.spansContent)
+        print "\t\t\t" + str(relation1.properties["Source"].spansContent) + " " + relation1.properties["Type"] + " " + str(relation1.properties["Target"].spansContent)
         if ("OriginalSource" in relation1.properties or "OriginalTarget" in relation1.properties):
             originalSource = relation1.properties["OriginalSource"] if "OriginalSource" in relation1.properties else relation1.properties["Source"]
             originalTarget = relation1.properties["OriginalTarget"] if "OriginalTarget" in relation1.properties else relation1.properties["Target"]
@@ -337,7 +337,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
             print "\t\t\t" + str(originalSource.spansContent) + " " + relation1.properties["Type"] + " " + str(originalTarget.spansContent)
 
         print "\t\tR2: " + relation2.properties["Source"].id + " " + relation2.properties["Type"] + " " + relation2.properties["Target"].id
-        print "\t\t\t" + str(relation2.spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.spansContent)
+        print "\t\t\t" + str(relation2.properties["Source"].spansContent) + " " + relation2.properties["Type"] + " " + str(relation2.properties["Target"].spansContent)
         if ("OriginalSource" in relation2.properties or "OriginalTarget" in relation2.properties):
             originalSource = relation2.properties["OriginalSource"] if "OriginalSource" in relation2.properties else relation2.properties["Source"]
             originalTarget = relation2.properties["OriginalTarget"] if "OriginalTarget" in relation2.properties else relation2.properties["Target"]
@@ -351,7 +351,7 @@ def processDocumentThymeMLData(xmlPath, documentName, documentContents):
         if relation.properties["Source"] is relation.properties["Target"]:
             selfReferentialRelations.append(relation)
             print "\t\t R: " + relation.properties["Source"].id + " " + relation.properties["Type"] + " " + relation.properties["Target"].id
-            print "\t\t\t" + str(relation.spansContent) + " " + relation.properties["Type"] + " " + str(relation.spansContent)
+            print "\t\t\t" + str(relation.properties["Source"].spansContent) + " " + relation.properties["Type"] + " " + str(relation.properties["Source"].spansContent)
             if "OriginalSource" in relation.properties or "OriginalTarget" in relation.properties:
                 originalSource = relation.properties["OriginalSource"] if "OriginalSource" in relation.properties else relation.properties["Source"]
                 originalTarget = relation.properties["OriginalTarget"] if "OriginalTarget" in relation.properties else relation.properties["Target"]
